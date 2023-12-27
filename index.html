@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Encryption Using Central Dogma</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: auto;
+            transition: background-color 0.5s;
+        }
+
+        body.dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        body.dark-mode h1 {
+            color: #fff; /* Color of the main heading in dark mode */
+        }
+
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        body.dark-mode h1 {
+            color: #fff; /* Color of the main heading in dark mode */
+        }
+        
+        .dark-heading {
+            color: #fff !important; /* !important is added to ensure it overrides other styles */
+        }
+        
+        button {
+            background-color: #4caf50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+        }
+
+        .display {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+        }
+
+        .download-link {
+            text-decoration: none;
+            color: #fff;
+            background-color: #4caf50;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+            max-height: 20px;
+        }
+
+        .download-link:hover {
+            background-color: #45a049;
+        }
+
+        .dark-mode-toggle {
+            cursor: pointer;
+            color: #333; /* Default color in light mode */
+            background-color: #fff; /* Default background color in light mode */
+            padding: 10px 15px;
+            border-radius: 4px;
+            transition: color 0.3s, background-color 0.3s;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        body.dark-mode .dark-mode-toggle {
+            color: #fff; /* Color in dark mode */
+            background-color: #333; /* Background color in dark mode */
+        }
+
+        .selected-images img {
+            max-width: 50px; /* Adjust the size as needed */
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dark-mode-toggle" onclick="toggleDarkMode()">Switch Mode</div>
+    <h1>Image Encryption/Decryption</h1>
+    <form id="encryptionForm" action="/encryption" method="post" enctype="multipart/form-data">
+        <label for="file">Select Image:</label>
+        <input type="file" name="file" accept=".bmp, .png, .jpg, .jpeg" multiple required>
+        <div class="selected-images" id="selectedImagesContainer"></div>
+        <label for="key">Key:</label>
+        <input type="text" name="key" required>
+        <label for="encrypt">Encrypt (1) / Decrypt (0):</label>
+        <input type="number" name="encrypt" min="0" max="1" required>
+        <button type="submit">Submit</button>
+    </form>
+    <div id="imageDisplayContainer"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+        function toggleDarkMode() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+
+            const mainHeading = $('h1');
+            mainHeading.toggleClass('dark-heading'); // Toggle the dark-heading class
+        }
+
+        function displayImage(imageBase64, imageId, downloadId) {
+            const imageElement = $(`#${imageId}`);
+            imageElement.attr('src', `data:image/bmp;base64,${imageBase64}`);
+            imageElement.css('display', 'block');
+
+            const downloadButton = $(`#${downloadId}`);
+            downloadButton.css('display', 'block');
+        }
+
+        function addImageContainers(numImages) {
+            const displayContainer = $('#imageDisplayContainer');
+
+            for (let i = 0; i < numImages; i++) {
+                const containerHtml = `
+                    <div class="display">
+                        <img id="originalImage${i}" src="#" alt="Original Image" style="display:none; max-width: 300px; width: 280px;">
+                        <img id="outputImage${i}" src="#" alt="Output Image" style="display:none; max-width: 300px; width: 280px;">
+                        <a id="downloadButton${i}" style="display:none;">Download</a>
+                    </div>
+                `;
+                displayContainer.append(containerHtml);
+            }
+        }
+
+        function displaySelectedImages(fileInput) {
+            const selectedImagesContainer = $('#selectedImagesContainer');
+            selectedImagesContainer.empty();
+
+            if (fileInput.files && fileInput.files.length > 0) {
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    const imageUrl = URL.createObjectURL(fileInput.files[i]);
+                    const imageHtml = `<img class="selected-image" src="${imageUrl}" alt="Selected Image">`;
+                    selectedImagesContainer.append(imageHtml);
+                }
+            }
+        }
+
+        $('#encryptionForm input[name="file"]').change(function () {
+            displaySelectedImages(this);
+        });
+
+        $('#encryptionForm').submit(function (event) {
+            event.preventDefault();
+
+            $.ajax({
+                url: '/encryption',
+                method: 'POST',
+                data: new FormData(this),
+                contentType: false,
+                processData: false,
+                success: function (responses) {
+                    console.log(responses);
+
+                    addImageContainers(responses.length);
+
+                    for (let i = 0; i < responses.length; i++) {
+                        const response = responses[i];
+                        const originalImageId = `originalImage${i}`;
+                        const outputImageId = `outputImage${i}`;
+                        const downloadButtonId = `downloadButton${i}`;
+
+                        displayImage(response.original_img, originalImageId, downloadButtonId);
+                        displayImage(response.output_img, outputImageId, downloadButtonId);
+
+                        const downloadButton = $(`#${downloadButtonId}`);
+                        downloadButton.addClass('download-link');
+                        downloadButton.attr('href', `data:image/png;base64,${response.output_img}`);
+                        downloadButton.attr('download', `output_image_${i}.png`);
+                        downloadButton.on('click', function () {
+                            downloadButton.off('click');
+                            downloadButton.css('display', 'none');
+                        });
+                    }
+                },
+                error: function (error) {
+                    console.log("Error", error);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
